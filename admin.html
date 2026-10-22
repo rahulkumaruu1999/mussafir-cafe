@@ -1,0 +1,101 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Musafir Café | Admin</title>
+<style>
+:root{--bg:#11100f;--panel:#1d1b19;--card:#25221f;--line:#403a34;--text:#f8f3eb;--muted:#b9aea1;--accent:#e5a45b;--red:#df6b5f;--green:#72c69b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif}button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:10px;padding:10px 14px;font-weight:700}.primary{background:var(--accent);color:#21170d}.subtle{background:#39332d;color:var(--text)}.danger{background:#572b28;color:#ffd8d4}.wrap{max-width:1120px;margin:auto;padding:22px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.brand{font-size:1.5rem;font-weight:850}.muted{color:var(--muted)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:18px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:6px}.field input,.field select{width:100%;padding:11px 12px;border-radius:9px;border:1px solid var(--line);background:#141312;color:var(--text)}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.hidden{display:none!important}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}.stat strong{font-size:1.5rem;display:block;color:var(--accent)}.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;min-width:680px}th,td{text-align:left;padding:11px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-size:.86rem}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#39332d;font-size:.8rem}.pill.off{background:#572b28;color:#ffd8d4}.notice{padding:12px;border-radius:10px;background:#30271e;color:#f6d5a7;margin-top:10px;white-space:pre-wrap}.order{padding:12px;border:1px solid var(--line);border-radius:12px;margin:8px 0}.orderhead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.small{font-size:.86rem}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.tabs button.active{background:var(--accent);color:#21170d}
+</style>
+</head>
+<body><main class="wrap">
+<header class="top"><div><div class="brand">☕ Musafir Café <span class="muted">/ Admin</span></div><div class="muted small">Menu, stock, orders, offers and sales</div></div><button id="logoutBtn" class="subtle hidden">Log out</button></header>
+<div id="setupNote" class="notice">Setup required: add your Supabase Project URL and anon/publishable key in this file, then run supabase_schema.sql in Supabase SQL Editor. Never paste a service-role key into a browser file.</div>
+<section id="loginPanel" class="panel"><h2>Admin login</h2><p class="muted">Use the admin account created in Supabase Authentication.</p><div class="grid"><label class="field">Email<input id="email" type="email" autocomplete="username" placeholder="admin@example.com"></label><label class="field">Password<input id="password" type="password" autocomplete="current-password" placeholder="Password"></label></div><div class="actions"><button class="primary" id="loginBtn">Log in</button></div><div id="loginMsg" class="muted small"></div></section>
+<section id="dashboard" class="hidden">
+<div class="tabs"><button data-tab="menu" class="active">Menu & stock</button><button data-tab="orders">Orders</button><button data-tab="sales">Daily sales</button><button data-tab="offers">Offers</button></div>
+<section id="tab-menu" class="panel"><h2>Menu & stock</h2><p class="muted small">Add or edit items here. Changes save to Supabase; the public site must read from the same database for customer-facing live updates.</p>
+<form id="itemForm"><input id="itemId" type="hidden"><div class="grid">
+<label class="field">Item name<input id="itemName" required placeholder="Paneer Wrap"></label>
+<label class="field">Category<input id="itemCategory" required placeholder="Sandwiches & Wraps"></label>
+<label class="field">Price (₹)<input id="itemPrice" type="number" min="0" step="1" required></label>
+<label class="field">Availability<select id="itemAvailable"><option value="true">Available</option><option value="false">Out of stock</option></select></label>
+<label class="field">Display emoji<input id="itemEmoji" maxlength="8" placeholder="☕"></label>
+<label class="field">Description<input id="itemDesc" placeholder="Optional description"></label>
+</div><div class="actions"><button class="primary" type="submit">Save item</button><button class="subtle" type="button" id="clearForm">Clear</button></div></form>
+<div id="menuMsg" class="muted small"></div><div class="tablewrap"><table><thead><tr><th>Item</th><th>Category</th><th>Price</th><th>Availability</th><th>Actions</th></tr></thead><tbody id="menuRows"></tbody></table></div></section>
+<section id="tab-orders" class="panel hidden"><h2>Orders</h2><p class="muted small">Orders show here only after checkout is connected to the database. WhatsApp-link orders do not automatically create a database record.</p><div id="ordersList" class="muted">Loading…</div></section>
+<section id="tab-sales" class="panel hidden"><h2>Daily sales report</h2><label class="field" style="max-width:260px">Date<input id="salesDate" type="date"></label><div class="stats" id="salesStats" style="margin-top:12px"></div><div id="salesNote" class="muted small" style="margin-top:10px">Report uses saved orders marked paid/completed. WhatsApp messages alone are not sales records.</div></section>
+<section id="tab-offers" class="panel hidden"><h2>Offers & discounts</h2><form id="offerForm"><input id="offerId" type="hidden"><div class="grid"><label class="field">Offer title<input id="offerTitle" required placeholder="Weekend Special"></label><label class="field">Discount type<select id="offerType"><option value="percent">Percentage (%)</option><option value="fixed">Fixed amount (₹)</option></select></label><label class="field">Discount value<input id="offerValue" type="number" min="1" required></label><label class="field">Coupon code<input id="offerCode" placeholder="MUSAFIR10"></label><label class="field">Start date<input id="offerStart" type="date"></label><label class="field">End date<input id="offerEnd" type="date"></label><label class="field">Active<select id="offerActive"><option value="true">Active</option><option value="false">Inactive</option></select></label></div><div class="actions"><button class="primary" type="submit">Save offer</button><button class="subtle" type="button" id="clearOffer">Clear</button></div></form><div class="tablewrap"><table><thead><tr><th>Offer</th><th>Discount</th><th>Code</th><th>Active</th><th>Actions</th></tr></thead><tbody id="offerRows"></tbody></table></div></section>
+</section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// SETUP: paste your Supabase Project URL and anon/publishable key here. Never use service_role key in frontend.
+const SUPABASE_URL = "https://rogkcgamcohnsakhrbzg.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_fc76xVpBTsNC10sfd3x8DQ_iyGVDrYu";
+const configured = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("YOUR_") && !SUPABASE_ANON_KEY.includes("YOUR_");
+const client = configured ? window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY) : null;
+const $ = id => document.getElementById(id);
+const rupees = n => "₹"+Number(n||0).toLocaleString("en-IN");
+function msg(id,t){$(id).textContent=t||""}
+function ready(){ $("setupNote").classList.toggle("hidden",configured); }
+ready();
+async function showDashboard(){
+ $("loginPanel").classList.add("hidden");$("dashboard").classList.remove("hidden");$("logoutBtn").classList.remove("hidden");
+ await Promise.all([loadMenu(),loadOrders(),loadOffers(),loadSales()]);
+}
+async function checkSession(){
+ if(!client)return;
+ const {data:{session}}=await client.auth.getSession();
+ if(session) await showDashboard();
+}
+$("loginBtn").onclick=async()=>{
+ if(!client){msg("loginMsg","Pehle Supabase URL aur anon/publishable key configure karo.");return}
+ msg("loginMsg","Logging in…");
+ const {error}=await client.auth.signInWithPassword({email:$("email").value,password:$("password").value});
+ if(error){msg("loginMsg",error.message);return} msg("loginMsg","Login successful.");await showDashboard();
+};
+$("logoutBtn").onclick=async()=>{if(client)await client.auth.signOut();$("dashboard").classList.add("hidden");$("loginPanel").classList.remove("hidden");$("logoutBtn").classList.add("hidden")};
+document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x===b));["menu","orders","sales","offers"].forEach(t=>$("tab-"+t).classList.toggle("hidden",t!==b.dataset.tab));if(b.dataset.tab==="sales")loadSales();if(b.dataset.tab==="orders")loadOrders()});
+async function loadMenu(){
+ if(!client)return;
+ const {data,error}=await client.from("menu_items").select("*").order("category").order("name");
+ if(error){msg("menuMsg",error.message);return}
+ $("menuRows").innerHTML=(data||[]).map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.category)}</td><td>${rupees(x.price)}</td><td><span class="pill ${x.available?"":"off"}">${x.available?"Available":"Out of stock"}</span></td><td><button class="subtle" data-edit="${x.id}">Edit</button> <button class="subtle" data-stock="${x.id}" data-available="${!x.available}">${x.available?"Mark out":"Mark available"}</button> <button class="danger" data-delete="${x.id}">Delete</button></td></tr>`).join("");
+ $("menuRows").querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editItem(data.find(x=>String(x.id)===b.dataset.edit)));
+ $("menuRows").querySelectorAll("[data-stock]").forEach(b=>b.onclick=async()=>{const {error}=await client.from("menu_items").update({available:b.dataset.available==="true"}).eq("id",b.dataset.stock);if(error)msg("menuMsg",error.message);else loadMenu()});
+ $("menuRows").querySelectorAll("[data-delete]").forEach(b=>b.onclick=async()=>{if(!confirm("Delete this item?"))return;const {error}=await client.from("menu_items").delete().eq("id",b.dataset.delete);if(error)msg("menuMsg",error.message);else loadMenu()});
+}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function editItem(x){$("itemId").value=x.id;$("itemName").value=x.name;$("itemCategory").value=x.category;$("itemPrice").value=x.price;$("itemAvailable").value=String(x.available);$("itemEmoji").value=x.emoji||"";$("itemDesc").value=x.description||"";window.scrollTo({top:0,behavior:"smooth"})}
+$("clearForm").onclick=()=>{$("itemForm").reset();$("itemId").value=""};
+$("itemForm").onsubmit=async e=>{e.preventDefault();if(!client)return;const x={name:$("itemName").value.trim(),category:$("itemCategory").value.trim(),price:Number($("itemPrice").value),available:$("itemAvailable").value==="true",emoji:$("itemEmoji").value.trim(),description:$("itemDesc").value.trim()};const id=$("itemId").value;const result=id?await client.from("menu_items").update(x).eq("id",id):await client.from("menu_items").insert(x);if(result.error){msg("menuMsg",result.error.message);return}msg("menuMsg","Saved.");$("itemForm").reset();$("itemId").value="";await loadMenu()};
+async function loadOrders(){
+ if(!client){$("ordersList").textContent="Configure Supabase to load saved orders.";return}
+ const {data,error}=await client.from("orders").select("*").order("created_at",{ascending:false}).limit(100);
+ if(error){$("ordersList").textContent=error.message;return}
+ $("ordersList").innerHTML=(data||[]).map(o=>`<div class="order"><div class="orderhead"><strong>${esc(o.customer_name||"Customer")} · ${rupees(o.total)}</strong><span class="pill">${esc(o.status)}</span></div><div class="muted small">${new Date(o.created_at).toLocaleString()} · ${esc(o.phone||"No phone")} · ${esc(o.order_type||"")}</div><div class="small">${esc(JSON.stringify(o.items||[]))}</div><div class="actions"><button class="subtle" data-status="${o.id}" data-next="accepted">Accept</button><button class="subtle" data-status="${o.id}" data-next="completed">Complete</button><button class="subtle" data-status="${o.id}" data-next="cancelled">Cancel</button></div></div>`).join("")||"No orders saved yet.";
+ $("ordersList").querySelectorAll("[data-status]").forEach(b=>b.onclick=async()=>{const {error}=await client.from("orders").update({status:b.dataset.next}).eq("id",b.dataset.status);if(error)alert(error.message);else loadOrders()});
+}
+async function loadSales(){
+ if(!client)return;
+ const date=$("salesDate").value||new Date().toISOString().slice(0,10);$("salesDate").value=date;
+ const start=new Date(date+"T00:00:00");const end=new Date(date+"T23:59:59.999");
+ const {data,error}=await client.from("orders").select("total,status,created_at").gte("created_at",start.toISOString()).lte("created_at",end.toISOString());
+ if(error){$("salesStats").textContent=error.message;return}
+ const paid=(data||[]).filter(o=>["paid","completed"].includes(o.status));
+ $("salesStats").innerHTML=`<div class="stat"><span class="muted">Orders</span><strong>${paid.length}</strong></div><div class="stat"><span class="muted">Sales total</span><strong>${rupees(paid.reduce((s,o)=>s+Number(o.total||0),0))}</strong></div><div class="stat"><span class="muted">All saved orders</span><strong>${data.length}</strong></div>`;
+}
+$("salesDate").value=new Date().toISOString().slice(0,10);$("salesDate").onchange=loadSales;
+async function loadOffers(){
+ if(!client)return;
+ const {data,error}=await client.from("offers").select("*").order("created_at",{ascending:false});
+ if(error){msg("offerRows",error.message);return}
+ $("offerRows").innerHTML=(data||[]).map(o=>`<tr><td>${esc(o.title)}</td><td>${o.discount_type==="percent"?o.discount_value+"%":rupees(o.discount_value)}</td><td>${esc(o.code||"—")}</td><td>${o.active?"Yes":"No"}</td><td><button class="subtle" data-offer-edit="${o.id}">Edit</button> <button class="danger" data-offer-delete="${o.id}">Delete</button></td></tr>`).join("");
+ $("offerRows").querySelectorAll("[data-offer-edit]").forEach(b=>b.onclick=()=>{const o=data.find(x=>String(x.id)===b.dataset.offerEdit);$("offerId").value=o.id;$("offerTitle").value=o.title;$("offerType").value=o.discount_type;$("offerValue").value=o.discount_value;$("offerCode").value=o.code||"";$("offerStart").value=o.start_date||"";$("offerEnd").value=o.end_date||"";$("offerActive").value=String(o.active)});
+ $("offerRows").querySelectorAll("[data-offer-delete]").forEach(b=>b.onclick=async()=>{if(confirm("Delete this offer?")){const {error}=await client.from("offers").delete().eq("id",b.dataset.offerDelete);if(error)alert(error.message);else loadOffers()}});
+}
+$("clearOffer").onclick=()=>{$("offerForm").reset();$("offerId").value=""};
+$("offerForm").onsubmit=async e=>{e.preventDefault();const o={title:$("offerTitle").value.trim(),discount_type:$("offerType").value,discount_value:Number($("offerValue").value),code:$("offerCode").value.trim()||null,start_date:$("offerStart").value||null,end_date:$("offerEnd").value||null,active:$("offerActive").value==="true"};const id=$("offerId").value;const r=id?await client.from("offers").update(o).eq("id",id):await client.from("offers").insert(o);if(r.error){alert(r.error.message);return}$("offerForm").reset();$("offerId").value="";loadOffers()};
+checkSession();
+</script></body></html>
